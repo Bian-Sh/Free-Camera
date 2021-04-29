@@ -18,204 +18,247 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class UnityCameraController : MonoBehaviour {
-	/// <summary>
-	/// It is the constant speed for moving freely
-	/// </summary>
-	public float freeMoveConstantSpeed;
-	/// <summary>
-	/// Maximum speed which th camera can move while accelerating
-	/// </summary>
-	public float maxFreeMoveSpeed;
-	/// <summary>
-	/// Accleration for moving freely
-	/// </summary>
-	public float freeMoveAccleration;
-	/// <summary>
-	/// how fast the camera rotate when you move you mouse left or right
-	/// </summary>
-	public float rotSpeed;
-	/// <summary>
-	///  The minimum scrool Speed
-	/// </summary>
-	public float minScrollSpeed;
-	/// <summary>
-	/// The maximum ScrollSpeed It should not go above the certain value 
-	/// </summary>
-	public float maxScrollSpeed;
-	/// <summary>
-	/// How far away the camera can move in x,y,z direction 
-	/// </summary>
-	public Vector3 cameraClampValue;
-	/// <summary>
-	/// You camera will focus to only those object which has a collider and collidable mask
-	/// </summary>
-	public LayerMask collidableMask;
+public class UnityCameraController : MonoBehaviour
+{
+    /// <summary>
+    /// It is the constant speed for moving freely
+    /// </summary>
+    public float freeMoveConstantSpeed;
+    /// <summary>
+    /// Maximum speed which th camera can move while accelerating
+    /// </summary>
+    public float maxFreeMoveSpeed;
+    /// <summary>
+    /// Accleration for moving freely
+    /// </summary>
+    public float freeMoveAccleration;
+    /// <summary>
+    /// how fast the camera rotate when you move you mouse left or right
+    /// </summary>
+    public float rotSpeed;
+    /// <summary>
+    ///  The minimum scrool Speed
+    /// </summary>
+    public float minScrollSpeed;
+    /// <summary>
+    /// The maximum ScrollSpeed It should not go above the certain value 
+    /// </summary>
+    public float maxScrollSpeed;
+    /// <summary>
+    /// How far away the camera can move in x,y,z direction 
+    /// </summary>
+    public Vector3 cameraClampValue;
+    /// <summary>
+    /// You camera will focus to only those object which has a collider and collidable mask
+    /// </summary>
+    public LayerMask collidableMask;
 
-	/// <summary>
-	/// This is used so that when the scene starts it will focus this transform
-	/// </summary>
-	public Transform currentFocusTransform;
+    /// <summary>
+    /// This is used so that when the scene starts it will focus this transform
+    /// </summary>
+    public Transform currentFocusTransform;
 
-	/// <summary>
-	/// It is a class which do has call the visual stuff like panicon, rotation icon, normal mouse icon
-	/// </summary>
-	public CameraVisualStuff visual;
+    /// <summary>
+    /// It is a class which do has call the visual stuff like panicon, rotation icon, normal mouse icon
+    /// </summary>
+    public CameraVisualStuff visual;
 
-	Camera cam;
-	float currentScrollSpeed;
-	float currentMoveSpeed;
-	float currentFreeMoveAccleration;
-
-
-	const float panMultiplier = 3;
-	const float terrainFocusMultiplier = 2;
-	const float normalFocuaMultiplier = 3;
-
-	void Start () {
-		cam = GetComponent<Camera> ();
-		FocusCameraOnGameobject (currentFocusTransform);
-		visual.currentSprite = visual.panTexture;
-		Cursor.visible = false;
-	}
-	
-	void Update () {
-
-		visual.cursor.transform.position = Input.mousePosition + visual.offset;
-		visual.currentSprite = visual.panTexture;
+    float currentScrollSpeed;
+    float currentMoveSpeed;
+    float currentFreeMoveAccleration;
 
 
-		FocusGameObject (); 
-		RotateCamera (); 
-		PanCamera ();
-		ZoomCamera ();
-		ClampCamera ();
+    const float panMultiplier = 3;
+    const float terrainFocusMultiplier = 2;
+    const float normalFocuaMultiplier = 3;
 
-		visual.cursor.sprite = visual.currentSprite;
-	}
+    void Start()
+    {
+        FocusCameraOnGameobject(currentFocusTransform);
+        visual.currentSprite = visual.panTexture;
+        Cursor.visible = false;
+    }
 
-	void ClampCamera ()	{
-		
-		Vector3 clampPos = transform.position;
-		clampPos.x = Mathf.Clamp (clampPos.x, -cameraClampValue.x, cameraClampValue.x);
-		clampPos.y = Mathf.Clamp (clampPos.y, -cameraClampValue.y, cameraClampValue.y);
-		clampPos.z = Mathf.Clamp (clampPos.z, -cameraClampValue.z, cameraClampValue.z);
-		transform.position = clampPos;
+    void Update()
+    {
 
-		transform.eulerAngles = new Vector3 (transform.eulerAngles.x, transform.eulerAngles.y, 0);
+        visual.cursor.transform.position = Input.mousePosition + visual.offset;
+        visual.currentSprite = visual.panTexture;
 
-	}
 
-	// more the distace from the current focus transform more is the scrollspeed
-	void ZoomCamera (){
-		
-		float zoom = Input.GetAxisRaw ("Mouse ScrollWheel");
-		currentScrollSpeed = (currentFocusTransform.position - transform.position).sqrMagnitude;
-		currentScrollSpeed = Mathf.Clamp (currentScrollSpeed, minScrollSpeed, maxScrollSpeed);
+        FocusGameObject();
+        RotateCamera();
+        PanCamera();
+        ZoomCamera();
+        ClampCamera();
 
-		transform.Translate (transform.forward * zoom * currentScrollSpeed * Time.deltaTime, Space.World);
-	}
+        visual.cursor.sprite = visual.currentSprite;
+    }
 
-	// more the distace from the current focus transform more is the pan speed
-	void PanCamera (){
-		
-		if (Input.GetMouseButton (0)) {
-			Vector2 panInput = new Vector2 (-Input.GetAxisRaw ("Mouse X"), -Input.GetAxisRaw ("Mouse Y"));
-			transform.Translate ((transform.right * panInput.x + transform.up * panInput.y) * 
-				(currentFocusTransform.position - transform.position).magnitude *panMultiplier *
-				Time.deltaTime, Space.World);
-		}
-	}
+    void ClampCamera()
+    {
 
-	void RotateCamera (){
-		
-		if (Input.GetMouseButton (1)) {
-			visual.currentSprite = visual.rotateTexture;
-			// Rotate left and right
-			Vector2 rotInput = new Vector2 (Input.GetAxisRaw ("Mouse X"), -Input.GetAxisRaw ("Mouse Y"));
-			transform.Rotate ((transform.up * rotInput.x + transform.right * rotInput.y) * rotSpeed * Time.deltaTime, Space.World);
-			if (Input.GetKey (KeyCode.W)) {
-				transform.Translate ((transform.forward) * currentMoveSpeed * Time.deltaTime, Space.World);
-			}
-			if (Input.GetKey (KeyCode.S)) {
-				transform.Translate ((-transform.forward) * currentMoveSpeed * Time.deltaTime, Space.World);
-			}
-			if (Input.GetKey (KeyCode.A)) {
-				transform.Translate ((-transform.right) * currentMoveSpeed * Time.deltaTime, Space.World);
-			}
-			if (Input.GetKey (KeyCode.D)) {
-				transform.Translate ((transform.right) * currentMoveSpeed * Time.deltaTime, Space.World);
-			}
+        Vector3 clampPos = transform.position;
+        clampPos.x = Mathf.Clamp(clampPos.x, -cameraClampValue.x, cameraClampValue.x);
+        clampPos.y = Mathf.Clamp(clampPos.y, -cameraClampValue.y, cameraClampValue.y);
+        clampPos.z = Mathf.Clamp(clampPos.z, -cameraClampValue.z, cameraClampValue.z);
+        transform.position = clampPos;
 
-			if ((Input.GetKey (KeyCode.W) || Input.GetKey (KeyCode.S) || Input.GetKey (KeyCode.A) || Input.GetKey (KeyCode.D)) ) {
-				if (Input.GetKey (KeyCode.LeftShift)) {
-					currentFreeMoveAccleration += freeMoveAccleration;
-					currentMoveSpeed += Time.deltaTime * currentFreeMoveAccleration * currentFreeMoveAccleration;
-					currentMoveSpeed = Mathf.Clamp (currentMoveSpeed, freeMoveConstantSpeed, maxFreeMoveSpeed);
-				} else {
-					currentFreeMoveAccleration = 0;
-					currentMoveSpeed = freeMoveConstantSpeed;
-				}
-			}
+        transform.eulerAngles = new Vector3(transform.eulerAngles.x, transform.eulerAngles.y, 0);
 
-		}
-	}
+    }
 
-	void FocusGameObject () {
-		if (Input.GetKey (KeyCode.Q)) {
-			visual.currentSprite = visual.mouseTexure;
-			if (Input.GetMouseButtonDown (0)) {
-				Ray ray = Camera.main.ScreenPointToRay (Input.mousePosition);
-				RaycastHit hit;
-				if (Physics.Raycast (ray.origin, ray.direction, out hit, int.MaxValue, collidableMask)) {
-					currentFocusTransform = hit.transform;
-					FocusCameraOnGameobject (hit.transform);
-				}
-			}
-		}
-	}
+    // more the distace from the current focus transform more is the scrollspeed
+    void ZoomCamera()
+    {
 
-	// check the distance between center bound and the max bound and get the magnitute and then move the transform of camera backward from center to that distance
-	void FocusCameraOnGameobject (Transform hit) {
-		Bounds hitBound = hit.GetComponent<Collider>().bounds;
-		bool isTerrain = hit.GetComponent<Terrain> ();
-		Vector3 centerPos = hit.position; 
-		float maxDistance = (hitBound.center - hitBound.max).magnitude * ((isTerrain == true) ? terrainFocusMultiplier : normalFocuaMultiplier);
-		Vector3 focusPoint = centerPos - transform.forward * maxDistance;
-		StartCoroutine (SmoothlyMoveCameraTowardsFocusPoint (focusPoint));
-	}
+        float zoom = Input.GetAxisRaw("Mouse ScrollWheel");
+        currentScrollSpeed = (currentFocusTransform.position - transform.position).sqrMagnitude;
+        currentScrollSpeed = Mathf.Clamp(currentScrollSpeed, minScrollSpeed, maxScrollSpeed);
 
-	IEnumerator SmoothlyMoveCameraTowardsFocusPoint (Vector3 focusPoint) {
-		float focusTime = 0.1f;
-		float time = 0;
-		float speed = 1 / focusTime;
-		Vector3 initiaPos = transform.position;
+        transform.Translate(transform.forward * zoom * currentScrollSpeed * Time.deltaTime, Space.World);
+    }
 
-		while (time <= focusTime) {
-			time += Time.deltaTime;
-			float amount = Ease (time * speed);
-			amount = Mathf.Clamp01 (amount);
+    // more the distace from the current focus transform more is the pan speed
+    void PanCamera()
+    {
 
-			transform.position = Vector3.Lerp (initiaPos, focusPoint, amount );
-			yield return null;
-		}
-	}
+        if (Input.GetMouseButton(2))
+        {
+            Vector2 panInput = new Vector2(-Input.GetAxisRaw("Mouse X"), -Input.GetAxisRaw("Mouse Y"));
+            transform.Translate((transform.right * panInput.x + transform.up * panInput.y) *
+                (currentFocusTransform.position - transform.position).magnitude * panMultiplier *
+                Time.deltaTime, Space.World);
+        }
+    }
 
-	float Ease (float x){
-		float a = 3;
-		return Mathf.Pow (x, a) / (Mathf.Pow (x, a) + Mathf.Pow ((1 - x), a));
-	}
+    void RotateCamera()
+    {
+
+        if (Input.GetMouseButton(1))
+        {
+            visual.currentSprite = visual.rotateTexture;
+            // Rotate left and right
+            Vector2 rotInput = new Vector2(Input.GetAxisRaw("Mouse X"), -Input.GetAxisRaw("Mouse Y"));
+            transform.Rotate((transform.up * rotInput.x + transform.right * rotInput.y) * rotSpeed * Time.deltaTime, Space.World);
+            if (Input.GetKey(KeyCode.W))
+            {
+                transform.Translate((transform.forward) * currentMoveSpeed * Time.deltaTime, Space.World);
+            }
+            if (Input.GetKey(KeyCode.S))
+            {
+                transform.Translate((-transform.forward) * currentMoveSpeed * Time.deltaTime, Space.World);
+            }
+            if (Input.GetKey(KeyCode.A))
+            {
+                transform.Translate((-transform.right) * currentMoveSpeed * Time.deltaTime, Space.World);
+            }
+            if (Input.GetKey(KeyCode.D))
+            {
+                transform.Translate((transform.right) * currentMoveSpeed * Time.deltaTime, Space.World);
+            }
+            if (Input.GetKey(KeyCode.Q))
+            {
+                transform.Translate((-transform.up) * currentMoveSpeed * Time.deltaTime, Space.World);
+            }
+            if (Input.GetKey(KeyCode.E))
+            {
+                transform.Translate((transform.up) * currentMoveSpeed * Time.deltaTime, Space.World);
+            }
+            //var angle = transform.eulerAngles.x;
+            //angle = angle > 270 ? angle - 360 : angle;
+            //if (Input.GetKey(KeyCode.E))
+            //{
+            //    transform.position += (Mathf.Abs(angle) < 45 ? Vector3.up : Vector3.forward) * currentMoveSpeed * Time.deltaTime;
+            //}
+            //else if (Input.GetKey(KeyCode.Q))
+            //{
+            //    transform.position += (Mathf.Abs(angle) < 45 ? Vector3.down : Vector3.back) * currentMoveSpeed * Time.deltaTime;
+            //}
+
+
+            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.Q )|| Input.GetKey(KeyCode.E))
+            {
+                if (Input.GetKey(KeyCode.LeftShift))
+                {
+                    currentFreeMoveAccleration += freeMoveAccleration;
+                    currentMoveSpeed += Time.deltaTime * currentFreeMoveAccleration * currentFreeMoveAccleration;
+                    currentMoveSpeed = Mathf.Clamp(currentMoveSpeed, freeMoveConstantSpeed, maxFreeMoveSpeed);
+                }
+                else
+                {
+                    currentFreeMoveAccleration = 0;
+                    currentMoveSpeed = freeMoveConstantSpeed;
+                }
+            }
+
+        }
+    }
+
+    void FocusGameObject()
+    {
+        if (Input.GetKey(KeyCode.F))
+        {
+            visual.currentSprite = visual.mouseTexure;
+            if (Input.GetMouseButtonDown(0))
+            {
+                Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+                RaycastHit hit;
+                if (Physics.Raycast(ray.origin, ray.direction, out hit, int.MaxValue, collidableMask))
+                {
+                    currentFocusTransform = hit.transform;
+                    FocusCameraOnGameobject(hit.transform);
+                }
+            }
+        }
+    }
+
+    // check the distance between center bound and the max bound and get the magnitute and then move the transform of camera backward from center to that distance
+    void FocusCameraOnGameobject(Transform hit)
+    {
+        Bounds hitBound = hit.GetComponent<Collider>().bounds;
+        bool isTerrain = hit.GetComponent<Terrain>();
+        Vector3 centerPos = hit.position;
+        float maxDistance = (hitBound.center - hitBound.max).magnitude * ((isTerrain == true) ? terrainFocusMultiplier : normalFocuaMultiplier);
+        Vector3 focusPoint = centerPos - transform.forward * maxDistance;
+        StartCoroutine(SmoothlyMoveCameraTowardsFocusPoint(focusPoint));
+    }
+
+    IEnumerator SmoothlyMoveCameraTowardsFocusPoint(Vector3 focusPoint)
+    {
+        float focusTime = 0.1f;
+        float time = 0;
+        float speed = 1 / focusTime;
+        Vector3 initiaPos = transform.position;
+
+        while (time <= focusTime)
+        {
+            time += Time.deltaTime;
+            float amount = Ease(time * speed);
+            amount = Mathf.Clamp01(amount);
+
+            transform.position = Vector3.Lerp(initiaPos, focusPoint, amount);
+            yield return null;
+        }
+    }
+
+    float Ease(float x)
+    {
+        float a = 3;
+        return Mathf.Pow(x, a) / (Mathf.Pow(x, a) + Mathf.Pow((1 - x), a));
+    }
 }
 
 [System.Serializable]
-public class CameraVisualStuff {
-	public Sprite mouseTexure;
-	public Sprite rotateTexture;
-	public Sprite panTexture;
-	public Vector3 offset;
-	public Image cursor;
+public class CameraVisualStuff
+{
+    public Sprite mouseTexure;
+    public Sprite rotateTexture;
+    public Sprite panTexture;
+    public Vector3 offset;
+    public Image cursor;
 
-	[HideInInspector]
-	public Sprite currentSprite;
+    [HideInInspector]
+    public Sprite currentSprite;
 }
 
